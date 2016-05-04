@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 
 public enum ScoreEvent{
 	draw,
@@ -15,6 +16,7 @@ public class Prospector : MonoBehaviour {
 	static public Prospector 	S;
 	static public int SCORE_FROM_PREV_ROUND=0;
 	static public int HIGH_SCORE = 0;
+	public float reloadDelay = 1f;
 	public Vector3              fsPosMid  = new Vector3(0.5f, 0.90f, 0);
 	public Vector3              fsPosRun  = new Vector3(0.5f, 0.75f, 0);
 	public Vector3              fsPosMid2 = new Vector3(0.5f, 0.5f,  0);
@@ -38,8 +40,8 @@ public class Prospector : MonoBehaviour {
 	public int scoreRun=0;
 	public int score = 0;
 	public FloatingScore fsRun;
-
-	public
+	public GUIText GTGameOver;
+	public GUIText GTRoundResult;
 
 	void Awake(){
 		S = this;
@@ -51,9 +53,33 @@ public class Prospector : MonoBehaviour {
 		        score += SCORE_FROM_PREV_ROUND;
 		        // And reset the SCORE_FROM_PREV_ROUND
 		        SCORE_FROM_PREV_ROUND = 0; 
+		// Set up the GUITexts that show at the end of the round
+		        // Get the GUIText Components
+		        GameObject go = GameObject.Find ("GameOver");
+		        if (go != null) {
+			            GTGameOver = go.GetComponent<GUIText>();
+			        }
+		        go = GameObject.Find ("RoundResult");
+		        if (go != null) {
+			            GTRoundResult = go.GetComponent<GUIText>();
+			        }
+				// Make them invisible
+		        ShowResultGTs(false);
+
+		        go = GameObject.Find("HighScore");
+		        string hScore = "High Score: "+Utils.AddCommasToNumber(HIGH_SCORE);
+		        go.GetComponent<GUIText>().text = hScore;
+		    }
+
+	    void ShowResultGTs(bool show) {
+		        GTGameOver.gameObject.SetActive(show);
+		        GTRoundResult.gameObject.SetActive(show);
+		    
 	}
 
 	public List<CardProspector> drawPile;
+
+
 
 	void Start() {
 		Scoreboard.S.score = score;
@@ -102,7 +128,7 @@ public class Prospector : MonoBehaviour {
 		        foreach (SlotDef tSD in layout.slotDefs) {
 			            // ^ Iterate through all the SlotDefs in the layout.slotDefs as tSD
 			            cp = Draw(); // Pull a card from the top (beginning) of the drawPile
-			            cp.faceUP = tSD.faceUp;    // Set its faceUp to the value in SlotDef
+			            cp.faceUp = tSD.faceUp;    // Set its faceUp to the value in SlotDef
 			            cp.transform.parent = layoutAnchor;  // Make its parent layoutAnchor
 			            // This replaces the previous parent: deck.deckAnchor, which appears
 			            //   as _Deck in the Hierarchy when the scene is playing.
@@ -157,7 +183,7 @@ public class Prospector : MonoBehaviour {
 					case CardState.tableau:
 			            // Clicking a card in the tableau will check if it's a valid play
 						bool validMatch = true;
-			            if (!cd.faceUP) {
+			            if (!cd.faceUp) {
 				                // If the card is face-down, it's not valid
 				                validMatch = false;
 				            }
@@ -187,7 +213,7 @@ public class Prospector : MonoBehaviour {
 			            layout.multiplier.y * layout.discardPile.y,
 			            -layout.discardPile.layerID+0.5f );
 		        // ^ Position it on the discardPile 
-				cd.faceUP = true;
+				cd.faceUp = true;
 		        // Place it on top of the pile for depth sorting
 		        cd.SetSortingLayerName(layout.discardPile.layerName);
 		        cd.SetSortOrder(-100+discardPile.Count);
@@ -205,7 +231,7 @@ public class Prospector : MonoBehaviour {
 			            layout.multiplier.x * layout.discardPile.x,
 			            layout.multiplier.y * layout.discardPile.y,
 			            -layout.discardPile.layerID );
-		        cd.faceUP = true; // Make it face-up
+		        cd.faceUp= true; // Make it face-up
 		        // Set the depth sorting
 		        cd.SetSortingLayerName(layout.discardPile.layerName);
 		        cd.SetSortOrder(0);
@@ -224,7 +250,7 @@ public class Prospector : MonoBehaviour {
 				                layout.multiplier.x * (layout.drawPile.x + i*dpStagger.x),
 				                layout.multiplier.y * (layout.drawPile.y + i*dpStagger.y),
 				                -layout.drawPile.layerID+0.1f*i );
-			            cd.faceUP = false; // Make them all face-down
+			            cd.faceUp = false; // Make them all face-down
 			            cd.state = CardState.drawpile;
 			            // Set depth sorting
 			            cd.SetSortingLayerName(layout.drawPile.layerName);
@@ -234,7 +260,7 @@ public class Prospector : MonoBehaviour {
 		// Return true if the two cards are adjacent in rank (A & K wrap around)
 	    public bool AdjacentRank(CardProspector c0, CardProspector c1) {
 		        // If either card is face-down, it's not adjacent.
-		        if (!c0.faceUP || !c1.faceUP) return(false);
+		        if (!c0.faceUp || !c1.faceUp) return(false);
 
 		// If they are 1 apart, they are adjacent
 		        if (Mathf.Abs(c0.rank - c1.rank) == 1) {
@@ -257,7 +283,7 @@ public class Prospector : MonoBehaviour {
 					                    fup = false; // then this card is face-down
 					                }
 				            }
-			            cd.faceUP = fup; // Set the value on the card
+			            cd.faceUp = fup; // Set the value on the card
 			        }
 		    }
 	// Test whether the game is over
@@ -293,9 +319,19 @@ public class Prospector : MonoBehaviour {
 			            print ("Game Over. You Lost. :(");
 			ScoreManager (ScoreEvent.gameLoss);
 			        }
-		        // Reload the scene, resetting the game
-		        Application.LoadLevel("__Prospector_Scene_0");
+				// Reload the scene in reloadDelay seconds
+		        // This will give the score a moment to travel
+		        Invoke ("ReloadLevel", reloadDelay);                                 //1
+		        // Application.LoadLevel("__Prospector_Scene_0"); // Now commented out
 		    }
+
+	    void ReloadLevel() {
+		        // Reload the scene, resetting the game
+		string sceneName = SceneManager.GetActiveScene().name;
+		SceneManager.LoadScene(sceneName,LoadSceneMode.Single);
+		        //Application.LoadLevel("__Prospector_Scene_0");
+		    }
+		      
 	// ScoreManager handles all of the scoring
 	    void ScoreManager(ScoreEvent sEvt) {
 				List<Vector3> fsPts;
@@ -347,22 +383,30 @@ public class Prospector : MonoBehaviour {
 
 		        // This second switch statement handles round wins and losses
 		        switch (sEvt) {
-		        case ScoreEvent.gameWin:
+		case ScoreEvent.gameWin:
+			GTGameOver.text = "Round Over";
 			            // If it's a win, add the score to the next round
 			            // static fields are NOT reset by Application.LoadLevel()
-			            Prospector.SCORE_FROM_PREV_ROUND = score;
-			            print ("You won this round! Round score: "+score);
+			Prospector.SCORE_FROM_PREV_ROUND = score;
+			print ("You won this round! Round score: " + score);
+			GTRoundResult.text = "You won this round!\nRound Score: " + score;
+			ShowResultGTs (true);
 			            break;
-		        case ScoreEvent.gameLoss:
+		case ScoreEvent.gameLoss:
+			GTGameOver.text = "Game Over";
 			            // If it's a loss, check against the high score
-			            if (Prospector.HIGH_SCORE <= score) {
-				                print("You got the high score! High score: "+score);
-				                Prospector.HIGH_SCORE = score;
-				                PlayerPrefs.SetInt("ProspectorHighScore", score);
-			            } else {
-				                print ("Your final score for the game was: "+score);
-				            }
-			            break;
+			if (Prospector.HIGH_SCORE <= score) {
+				print ("You got the high score! High score: " + score);
+				string sRR = "You got the high score!\nHigh score: " + score;
+				GTRoundResult.text = sRR;
+				Prospector.HIGH_SCORE = score;
+				PlayerPrefs.SetInt ("ProspectorHighScore", score);
+			} else {
+				print ("Your final score for the game was: " + score);
+				GTRoundResult.text = "Your final score was: " + score;
+			}
+			ShowResultGTs (true);
+			break;
 		        default:
 			            print ("score: "+score+"  scoreRun:"+scoreRun+"  chain:"+chain);
 			            break;

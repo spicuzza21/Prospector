@@ -30,6 +30,15 @@ public class CardProspector : Card { // Make sure CardProspector extends Card
 		base.OnMouseUpAsButton();
 	}
 
+	public bool faceUp {
+		get {
+			return (!back.activeSelf);
+		}		
+		set {
+			back.SetActive(!value);
+		}
+	}
+
 } 
 
 

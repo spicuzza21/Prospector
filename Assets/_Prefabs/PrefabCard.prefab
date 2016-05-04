@@ -11,7 +11,7 @@ GameObject:
   - 212: {fileID: 21200000}
   - 65: {fileID: 6500000}
   - 54: {fileID: 5481130}
-  - 114: {fileID: 11421606}
+  - 114: {fileID: 11464028}
   m_Layer: 0
   m_Name: PrefabCard
   m_TagString: Untagged
@@ -58,7 +58,7 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 2.56, y: 3.56, z: 0.1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &11421606
+--- !u!114 &11464028
 MonoBehaviour:
   m_ObjectHideFlags: 1
   m_PrefabParentObject: {fileID: 0}
@@ -66,7 +66,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 100000}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0541cbd7513c1484ab4168854db3bb43, type: 3}
+  m_Script: {fileID: 11500000, guid: e0b6b669d285d43e2a6a2f7bd2080ac5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   suit: 
@@ -82,11 +82,18 @@ MonoBehaviour:
     pips: []
   spriteRenderers: []
   state: 0
-  bezierPts: []
-  bezierRots: []
-  timeStart: 0
-  timeDuration: 0
-  reportFinishTo: {fileID: 0}
+  hiddenBy: []
+  layoutID: 0
+  slotDef:
+    x: 0
+    y: 0
+    faceUp: 0
+    layerName: Default
+    layerID: 0
+    id: 0
+    hiddenBy: 
+    type: slot
+    stagger: {x: 0, y: 0}
 --- !u!212 &21200000
 SpriteRenderer:
   m_ObjectHideFlags: 1
